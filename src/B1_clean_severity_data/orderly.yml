@@ -80,20 +80,6 @@ packages:
 #
 sources:
   - R/get_symptoms.R
-#   - R/get_table_projections.R
-#   - R/make_proj_plot.R
-#   - R/get_R0_to_hit_threshold.R
-#   - R/add_multiple_incid.R
-#   - R/process_param.R
-#   - R/plot_si.R
-#   - R/get_total_incid.R
-#   - R/estimate_R0.R
-#   - R/make_selected_cum_projection_plots.R
-#   - R/make_cum_projection_plots_estimated_R0.R
-#   - R/make_table_projections_selected_R0.R
-#   - R/make_table_projections_estimated_R0.R
-#   - R/make_param_baseline.R
-#   - R/update_param_sensitivity.R
   
 # Resources that the script needs to run; this is an array of strings
 # representing filenames *relative to, and below, this directory*.
