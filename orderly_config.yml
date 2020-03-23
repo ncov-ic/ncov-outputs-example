@@ -1,0 +1,34 @@
+# These three fields are assumed present by the api
+fields:
+  requester:
+    required: true
+  author:
+    required: true
+  comment:
+    required: false
+
+remote:
+  testing:
+    driver: orderlyweb::orderlyweb_remote
+    args:
+      host: ncov.dide.ic.ac.uk
+      port: 1443
+      token: $VAULT_AUTH_GITHUB_TOKEN
+  real:
+    driver: orderlyweb::orderlyweb_remote
+    args:
+      host: ncov.dide.ic.ac.uk
+      port: 443
+      token: $VAULT_AUTH_GITHUB_TOKEN
+
+vault:
+  addr: https://vault.dide.ic.ac.uk:8200
+
+minimum_orderly_version: 1.0.10
+
+changelog:
+  update:
+    public: false
+
+global_resources:
+  global

@@ -1,0 +1,12 @@
+---
+title: "TITLE FOR THE DOCUMENT"
+author: "AUTHORS"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output:
+  word_document:
+    fig_width: 7
+    fig_height: 5
+    fig_caption: true
+    highlight: "tango"
+    reference_docx: word_style.docx
+---

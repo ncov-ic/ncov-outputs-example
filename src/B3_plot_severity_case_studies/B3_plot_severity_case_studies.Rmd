@@ -1,0 +1,811 @@
+---
+title: "Plot severity from case studies"
+author: "Katy Gaythorpe and Natsuko Imai"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output:
+  word_document:
+    fig_width: 7
+    fig_height: 5
+    fig_caption: true
+    highlight: "tango"
+    reference_docx: word_style.docx
+    df_print: "kable"
+---
+
+```{r set up }
+
+ knitr::opts_chunk$set(echo = FALSE, fig.path = "figures/", 
+                       fig.ext = "png",
+                       fig.height = 8)
+
+## library(orderly)
+## orderly::orderly_test_start("B3_plot_severity_case_studies")
+## orderly::orderly_run("B3_plot_severity_case_studies")
+
+
+## orderly::orderly_develop_start()
+## orderly::orderly_develop_status()
+## orderly::orderly_develop_clean()
+
+```
+
+Import data.
+```{r }
+
+symptoms_freq <- read.csv("severity_data_case_study_symptoms_all.csv", 
+                          stringsAsFactors = FALSE,
+                          strip.white = TRUE)
+symptoms_freq_over60 <- read.csv("severity_data_case_study_symptoms_over_60.csv", 
+                          stringsAsFactors = FALSE,
+                          strip.white = TRUE)
+symptoms_freq_under60 <- read.csv("severity_data_case_study_symptoms_under_60.csv", 
+                          stringsAsFactors = FALSE,
+                          strip.white = TRUE)
+
+df <- readRDS("severity_data_country_case_studies.rds")
+
+```
+
+# Simple symptom progression
+
+```{r symptoms_all}
+
+symptoms_freq_tmp <-  symptoms_freq %>% 
+  filter(!symptom %in% c("any_symptom", "stable") ) # get specific symptoms only
+
+# get proportion. Ignore any symptom not coded and NAs.
+for(i in 2:ncol(symptoms_freq_tmp)){
+  total_symp <- sum(symptoms_freq_tmp[,i], na.rm = TRUE)
+  symptoms_freq_tmp[,i] <- symptoms_freq_tmp[,i]/total_symp
+  symptoms_freq_tmp[nrow(symptoms_freq_tmp)+1, i] <- total_symp
+}
+
+# wide to long
+symptoms_freq_prop <- symptoms_freq_tmp %>% 
+  tidyr::gather(Progression, Frequency, -symptom)
+
+# calc freq of each symptom amongst those who report it
+# not total number of patients
+# does not have to some to one.
+symptoms_freq_prop %>% 
+  filter(!symptom %in% c("Total reported", NA) ) %>%
+  filter(!is.na(Frequency)) %>%
+  mutate(Frequency = as.numeric(Frequency)) %>%
+  group_by(symptom) %>%
+  ungroup() %>%
+  
+  ggplot() + 
+  geom_col(aes(x=symptom, 
+               y = Frequency, 
+               fill = Progression))+
+  theme_pubr()+
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1, size = 14))+
+  ylab("Proportion") + xlab("Symptom") +
+  scale_fill_manual(labels = c(freq_at_any = "Any",
+                               freq_at_onset = "Onset",
+                               freq_at_prog1 = "Progression 1",
+                               freq_at_prog2 = "Progression 2",
+                               freq_at_prog3 = "Progression 3",
+                               freq_at_prog4 = "Progression 4"),
+                    values=c(rev(wes_palette("Darjeeling2")), "orchid") )
+
+```
+
+```{r symptoms_over60}
+
+# same as above but subset by >60 years
+symptoms_freq_over60_tmp <- symptoms_freq_over60 %>% 
+  filter(!symptom %in% c("any_symptom", "stable") ) # get specific symptoms only
+
+for(i in 2:ncol(symptoms_freq_over60_tmp)){
+  total_symp<- sum(symptoms_freq_over60_tmp[,i], na.rm = TRUE)
+  symptoms_freq_over60_tmp[,i] <- symptoms_freq_over60_tmp[,i]/total_symp
+  symptoms_freq_over60_tmp[nrow(symptoms_freq_over60_tmp)+1, i] <- total_symp
+}
+
+symptoms_freq_over60_prop <- symptoms_freq_over60_tmp %>% 
+  tidyr::gather(Progression, Frequency, -symptom)
+
+
+symptoms_freq_over60_prop %>% 
+  filter(!symptom %in% c("Total reported", NA) ) %>%
+  filter(!is.na(Frequency)) %>%
+  mutate(Frequency = as.numeric(Frequency)) %>%
+  group_by(symptom) %>%
+  ungroup() %>%
+  
+  ggplot() + 
+  geom_col(aes(x=symptom, 
+               y = Frequency, 
+               fill = Progression))+
+  theme_pubr()+
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1,size = 14))+
+  ylab("Proportion") + xlab("Symptom") +
+  scale_fill_manual(labels = c(freq_at_any = "Any",
+                                  freq_at_onset = "Onset",
+                                  freq_at_prog1 = "Progression 1",
+                                  freq_at_prog2 = "Progression 2",
+                                  freq_at_prog3 = "Progression 3",
+                                  freq_at_prog4 = "Progression 4"),
+                       values=c(rev(wes_palette("Darjeeling2")), "orchid") )
+
+```
+
+```{r symptoms_under60}
+# same as above but subset by <60 years
+
+symptoms_freq_under60_tmp <- symptoms_freq_under60 %>% 
+  filter(!symptom %in% c("any_symptom", "stable") ) # get specific symptoms only
+
+for(i in 2:ncol(symptoms_freq_under60_tmp)){
+  total_symp<- sum(symptoms_freq_under60_tmp[,i], na.rm = TRUE)
+  symptoms_freq_under60_tmp[,i] <- symptoms_freq_under60_tmp[,i]/total_symp
+  symptoms_freq_under60_tmp[nrow(symptoms_freq_under60_tmp)+1, i] <- total_symp
+}
+
+symptoms_freq_under60_prop <- symptoms_freq_under60_tmp %>% 
+  tidyr::gather(Progression, Frequency, -symptom)
+
+
+symptoms_freq_under60_prop %>% 
+  filter(!symptom %in% c("Total reported", NA) ) %>%
+  filter(!is.na(Frequency)) %>%
+  mutate(Frequency = as.numeric(Frequency)) %>%
+  group_by(symptom) %>%
+  ungroup() %>%
+  
+  ggplot() + 
+  geom_col(aes(x=symptom, 
+               y = Frequency, 
+               fill = Progression))+
+  theme_pubr()+
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1, size = 14))+
+  ylab("Proportion") + xlab("Symptom") +
+  scale_fill_manual(labels = c(freq_at_any = "Any",
+                                  freq_at_onset = "Onset",
+                                  freq_at_prog1 = "Progression 1",
+                                  freq_at_prog2 = "Progression 2",
+                                  freq_at_prog3 = "Progression 3",
+                                  freq_at_prog4 = "Progression 4"),
+                       values=c(rev(wes_palette("Darjeeling2")), "orchid") )
+
+```
+
+# Progression map of all individuals
+
+```{r progressionmap_all, fig.height=12}
+make_progressionmap(df)
+
+
+# dates wrong - could move to cleaning
+if(min(df$date_hospitalised-df$date_onset<0, na.rm = T)<0){
+  stop(paste0("Please check hospitalisation date for: ",
+              paste0(df$new_id[which(df$date_hospitalised-df$date_onset<0)], 
+                                                                collapse=", ")))
+}
+
+```
+
+```{r progressionmap_over60, fig.height=12}
+
+make_progressionmap(df %>% filter(as.numeric(age)>=60))
+
+
+```
+
+```{r progressionmap_under60, fig.height=12}
+
+make_progressionmap(df %>% filter(as.numeric(age)<=60))
+
+
+```
+
+
+# Time to symptoms
+
+## Pneumonia
+
+```{r time_pneumonia, fig.height=6}
+df <- add_first_symptom(df, "pneumonia")
+
+fit <- epitrix::fit_disc_gamma(as.numeric(df$time_first))
+
+ggplot(df) + 
+  geom_histogram(aes(x = time_first, 
+                     y = ..count../sum(..count..)), fill = "cyan") +
+  geom_line(data = data.frame(x = seq(0,20, by = 0.1),
+                              y = dgamma(seq(0,20, by = 0.1),
+                                         shape = fit$distribution$parameters$shape,
+                           scale = fit$distribution$parameters$scale)),
+            aes(x = x, y = y))+
+  
+  xlim(-1, 20) +
+  theme_pubr()+
+  xlab("Time from onset of symptoms to pneumonia") 
+
+dates_wrong <- sum(df$time_first<0 | df$time_first>20, 
+                   na.rm = TRUE)
+
+if(dates_wrong>0){
+  paste0("Check the dates for ", paste0(df$new_id[which(df$time_first<0 |
+                                          df$time_first>20)], 
+                                        collapse = ", "))
+}
+fit
+
+if(fit$converged == FALSE){
+  paste0("check fit to dist. as has not converged")
+}
+
+mean_onset_to_symp <- data.frame(symptom = "pneumonia",
+                                 mean_onset_to_symp = fit$mu,
+                                 sd_onset_to_symp = fit$sd)
+```
+
+We see pneumonia reported
+
+```{r pneumonia at onset}
+
+# what proportion of all pneumonia at is at onset
+df_pneumonia <- df %>% 
+  filter(!is.na(name_first)) %>% 
+  filter(name_first != "date_symptoms_full")
+
+as.data.frame(table(df_pneumonia$name_first))
+
+```
+out of `r nrow(df_pneumonia)` reports where pneumonia is mentioned. 
+
+Of those who have recovered ...
+
+```{r pneumonia at onset recovered}
+
+# what proportion of all pneumonia at is at onset
+df_pneumonia <- df %>% 
+  filter(!is.na(date_hospitalised)) %>%
+  filter(!is.na(name_first)) %>% 
+  filter(name_first != "date_symptoms_full")
+
+as.data.frame(table(df_pneumonia$name_first))
+
+```
+out of `r nrow(df_pneumonia)` reports where pneumonia is mentioned and the person recovered.
+
+## Fever
+
+```{r time_fever, fig.height=6}
+df <- add_first_symptom(df, "fever")
+
+fit <- epitrix::fit_disc_gamma(as.numeric(df$time_first))
+
+ggplot(df) + 
+  geom_histogram(aes(x = time_first, 
+                     y = ..count../sum(..count..)), fill = "orange") +
+  geom_line(data = data.frame(x = seq(0,20, by = 0.1),
+                              y = dgamma(seq(0,20, by = 0.1),
+                                         shape = fit$distribution$parameters$shape,
+                           scale = fit$distribution$parameters$scale)),
+            aes(x = x, y = y))+
+  
+  xlim(-1, 20) +
+  theme_pubr()+
+  xlab("Time from onset of symptoms to fever") 
+
+dates_wrong <- sum(df$time_first<0 | df$time_first>20, 
+                   na.rm = TRUE)
+
+if(dates_wrong>0){
+  paste0("Check the dates for ", paste0(df$new_id[which(df$time_first<0 |
+                                          df$time_first>20)], 
+                                        collapse = ", "))
+}
+fit
+
+if(fit$converged == FALSE){
+  paste0("check fit to dist. as has not converged")
+}
+
+mean_onset_to_symp %<>% bind_rows( data.frame(symptom = "fever",
+                                 mean_onset_to_symp = fit$mu,
+                                 sd_onset_to_symp = fit$sd) )
+
+```
+
+We see fever reported
+
+```{r fever at onset}
+
+# what proportion of all pneumonia at is at onset
+df_p <- df %>% 
+  filter(!is.na(name_first)) %>% 
+  filter(name_first != "date_symptoms_full")
+
+as.data.frame(table(df_p$name_first))
+
+```
+out of `r nrow(df_p)` reports. 
+
+## Shortness of breath
+
+```{r time_breath, fig.height=6}
+df <- add_first_symptom(df, "respiratory symptoms")
+
+fit <- epitrix::fit_disc_gamma(as.numeric(df$time_first))
+
+ggplot(df) + 
+  geom_histogram(aes(x = time_first, 
+                     y = ..count../sum(..count..)), fill = "pink") +
+  geom_line(data = data.frame(x = seq(0,20, by = 0.1),
+                              y = dgamma(seq(0,20, by = 0.1),
+                                         shape = fit$distribution$parameters$shape,
+                           scale = fit$distribution$parameters$scale)),
+            aes(x = x, y = y))+
+  
+  xlim(-1, 20) +
+  theme_pubr()+
+  xlab("Time from onset of symptoms to respiratory symptoms") 
+
+dates_wrong <- sum(df$time_first<0 | df$time_first>20, 
+                   na.rm = TRUE)
+
+if(dates_wrong>0){
+  paste0("Check the dates for ", paste0(df$new_id[which(df$time_first<0 |
+                                          df$time_first>20)], 
+                                        collapse = ", "))
+}
+fit
+if(fit$converged == FALSE){
+  paste0("check fit to dist. as has not converged")
+}
+
+mean_onset_to_symp %<>% bind_rows( data.frame(symptom = "respiratory symptoms",
+                                 mean_onset_to_symp = fit$mu,
+                                 sd_onset_to_symp = fit$sd) )
+```
+
+We see respiratory symptoms reported
+
+```{r breath at onset}
+
+# what proportion of all respiratory symptoms is at onset
+df_p <- df %>% 
+  filter(!is.na(name_first)) %>% 
+  filter(name_first != "date_symptoms_full")
+
+as.data.frame(table(df_p$name_first))
+
+```
+out of `r nrow(df_p)` reports. 
+
+## Diarrhea
+
+```{r time_diarrhea, fig.height=6}
+df <- add_first_symptom(df, "diarrhea")
+
+fit <- epitrix::fit_disc_gamma(as.numeric(df$time_first))
+
+ggplot(df) + 
+  geom_histogram(aes(x = time_first, 
+                     y = ..count../sum(..count..)), fill = "brown") +
+  geom_line(data = data.frame(x = seq(0,20, by = 0.1),
+                              y = dgamma(seq(0,20, by = 0.1),
+                                         shape = fit$distribution$parameters$shape,
+                           scale = fit$distribution$parameters$scale)),
+            aes(x = x, y = y))+
+  
+  xlim(-1, 20) +
+  theme_pubr()+
+  xlab("Time from onset of symptoms to diarrhea") 
+
+dates_wrong <- sum(df$time_first<0 | df$time_first>20, 
+                   na.rm = TRUE)
+
+if(dates_wrong>0){
+  paste0("Check the dates for ", paste0(df$new_id[which(df$time_first<0 |
+                                          df$time_first>20)], 
+                                        collapse = ", "))
+}
+fit
+if(fit$converged == FALSE){
+  paste0("check fit to dist. as has not converged")
+}
+
+mean_onset_to_symp %<>% bind_rows( data.frame(symptom = "diarrhea",
+                                 mean_onset_to_symp = fit$mu,
+                                 sd_onset_to_symp = fit$sd) )
+```
+
+We see diarrhea reported
+
+```{r diarrhea at onset}
+
+# what proportion of all diarrhoea at is at onset
+df_p <- df %>% 
+  filter(!is.na(name_first)) %>% 
+  filter(name_first != "date_symptoms_full")
+
+as.data.frame(table(df_p$name_first))
+
+```
+out of `r nrow(df_p)` reports. 
+
+## Fatigue
+
+```{r time_fatigue, fig.height=6}
+df <- add_first_symptom(df, "myalgia or fatigue")
+
+fit <- epitrix::fit_disc_gamma(as.numeric(df$time_first))
+
+ggplot(df) + 
+  geom_histogram(aes(x = time_first, 
+                     y = ..count../sum(..count..)), fill = "green") +
+  geom_line(data = data.frame(x = seq(0,20, by = 0.1),
+                              y = dgamma(seq(0,20, by = 0.1),
+                                         shape = fit$distribution$parameters$shape,
+                           scale = fit$distribution$parameters$scale)),
+            aes(x = x, y = y))+
+  
+  xlim(-1, 20) +
+  theme_pubr()+
+  xlab("Time from onset of symptoms to myalgia or fatigue") 
+
+dates_wrong <- sum(df$time_first<0 | df$time_first>20, 
+                   na.rm = TRUE)
+
+if(dates_wrong>0){
+  paste0("Check the dates for ", paste0(df$new_id[which(df$time_first<0 |
+                                          df$time_first>20)], 
+                                        collapse = ", "))
+}
+
+fit
+if(fit$converged == FALSE){
+  paste0("check fit to dist. as has not converged")
+}
+
+mean_onset_to_symp %<>% bind_rows( data.frame(symptom = "myalgia or fatigue",
+                                 mean_onset_to_symp = fit$mu,
+                                 sd_onset_to_symp = fit$sd) )
+
+```
+
+We see myalgia or fatigue reported
+
+```{r fatigue at onset}
+
+# what proportion of all fatigue at is at onset
+df_p <- df %>% 
+  filter(!is.na(name_first)) %>% 
+  filter(name_first != "date_symptoms_full")
+
+as.data.frame(table(df_p$name_first))
+
+```
+out of `r nrow(df_p)` reports. 
+
+# Number of reported symptoms
+
+```{r any symptoms}
+
+symptom_col_indices <- 
+  grep("^symptoms_at_onset|^symp_prog1|^symp_prog2|^symp_prog3|^symp_prog4|any_symp",
+                            names(df))
+# number reporting any symptoms
+df %<>% mutate(symptom_reported = NA)
+
+for(i in 1:nrow(df)){
+  tmp=df[i, symptom_col_indices]
+  tmp[tmp=="any_symptom"]=NA
+  df$symptom_reported[i] = all(is.na(tmp))
+}
+
+```
+
+The number of people reporting symptoms in the data is `r sum(!df$symptom_reported)`.
+
+# Time to outcome
+
+## Recovery or discharge
+
+```{r time_recovery, fig.height=6}
+df %<>% mutate(time_first = date_recovered-date_onset)
+
+fit <- epitrix::fit_disc_gamma(as.numeric(df$time_first))
+
+ggplot(df) + 
+  geom_histogram(aes(x = time_first, 
+                     y = ..count../sum(..count..)), fill = "darkgreen") +
+  geom_line(data = data.frame(x = seq(0,50, by = 0.1),
+                              y = dgamma(seq(0,50, by = 0.1),
+                                         shape = fit$distribution$parameters$shape,
+                           scale = fit$distribution$parameters$scale)),
+            aes(x = x, y = y))+
+  
+  xlim(-1, 50) +
+  theme_pubr()+
+  xlab("Time from onset of symptoms to recovery or discharge") 
+
+dates_wrong <- sum(df$time_first<0 | df$time_first>20, 
+                   na.rm = TRUE)
+
+if(dates_wrong>0){
+  paste0("Check the dates for ", paste0(df$new_id[which(df$time_first<0 |
+                                          df$time_first>50)], 
+                                        collapse = ", "))
+}
+fit
+
+if(fit$converged == FALSE){
+  paste0("check your gamma fit as it has not converged")
+}
+```
+
+
+## Hospitalised
+
+```{r time_hospitalised, fig.height=6}
+df %<>% mutate(time_first = date_hospitalised-date_onset)
+
+#ignore previous hospitalisation for now- japan052
+df %<>% mutate(time_first = ifelse(time_first<0, NA, time_first))
+
+fit <- epitrix::fit_disc_gamma(as.numeric(df$time_first))
+
+ggplot(df) + 
+  geom_histogram(aes(x = time_first, 
+                     y = ..count../sum(..count..)), fill = "blue") +
+  geom_line(data = data.frame(x = seq(0,20, by = 0.1),
+                              y = dgamma(seq(0,20, by = 0.1),
+                                         shape = fit$distribution$parameters$shape,
+                           scale = fit$distribution$parameters$scale)),
+            aes(x = x, y = y))+
+  
+  xlim(-1, 20) +
+  theme_pubr()+
+  xlab("Time from onset of symptoms to hospitalised") 
+
+dates_wrong <- sum(df$time_first<0 | df$time_first>20, 
+                   na.rm = TRUE)
+
+if(dates_wrong>0){
+  paste0("Check the dates for ", paste0(df$new_id[which(df$time_first<0 |
+                                          df$time_first>20)], 
+                                        collapse = ", "))
+}
+fit
+if(fit$converged == FALSE){
+  paste0("check your gamma fit as it has not converged")
+}
+
+```
+
+# Age
+
+```{r age}
+# TO DO: plot by 10 yr age bands
+df %>%
+  ggplot()+
+  geom_histogram(aes(age, fill = pneumonia))+
+  theme_pubr() +
+  xlab("Age")+ ylab("Count") +
+  geom_vline(xintercept = 60)
+```
+
+```{r symptom_by_age}
+
+symp_by_age <- bind_rows( symptoms_freq_under60 %>% mutate(over60 = "under60"),
+                          symptoms_freq_over60 %>% mutate(over60 = "over60") )
+
+symp_by_age$total_symp <- rowSums(symp_by_age[,grep("^freq_", 
+                                                    names(symp_by_age))], na.rm = TRUE)
+
+symp_by_age %>%
+  filter(!symptom %in% c("Total reported", NA, "any_symptom") ) %>%
+  group_by(symptom) %>%
+  mutate(count_by_symptom = sum(total_symp))%>%
+  ggplot() +
+  geom_col(aes(x = symptom, 
+               y = total_symp/count_by_symptom, 
+               fill = as.factor(over60))) +
+  theme_pubr() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  scale_fill_manual(values = c(wes_palette("Darjeeling2")[5],
+                               wes_palette("Darjeeling2")[1]),
+                    labels = c("over60" = "Over 60",
+                               "under60" = "Under 60"),
+                    name = "") +
+  ylab("Proportion") + xlab("")
+
+```
+
+
+# Tables of outputs
+
+```{r table outputs 1}
+
+# symptoms table
+table_out <- data.frame(symptom = unique(symp_by_age$symptom))
+
+table_out %<>% filter(!symptom %in% c("any_symptom", "no symptoms", "stable"))
+
+# all
+table_out %<>% left_join(symp_by_age %>%
+                           group_by(symptom) %>%
+                           mutate(count_by_symptom = sum(total_symp)) %>%
+                           select(c(symptom, count_by_symptom)))
+table_out %<>% group_by(symptom) %>% summarise(proportion_of_all = count_by_symptom[1])
+
+table_out %<>% 
+  mutate(proportion_of_all = proportion_of_all/sum(proportion_of_all, na.rm=TRUE))
+
+#over 60
+table_out %<>% left_join(symp_by_age %>%
+                           filter(over60 == "over60") %>%
+                           select(c(symptom, total_symp)))
+table_out %<>% 
+  mutate(total_symp = total_symp/sum(total_symp, na.rm=TRUE))
+
+table_out %<>% rename(proportion_of_over_60 = total_symp)
+
+#under 60
+table_out %<>% left_join(symp_by_age %>%
+                           filter(over60 == "under60") %>%
+                           select(c(symptom, total_symp)))
+table_out %<>% 
+  mutate(total_symp = total_symp/sum(total_symp, na.rm=TRUE))
+
+table_out %<>% rename(proportion_of_under_60 = total_symp)
+
+# Total
+
+table_out %<>% bind_rows(data.frame(symptom = "Total reported",
+                                    proportion_of_all = sum(
+                                      symp_by_age[ !symp_by_age$symptom %in% c("any_symptom", "no symptoms", "stable"), 
+                                                  grep("^freq", names(symp_by_age))][],
+                                      na.rm = TRUE
+                                    ),
+                                    proportion_of_over_60 = sum(
+                                      symp_by_age[ !symp_by_age$symptom %in% c("any_symptom", "no symptoms", "stable") &
+                                                     symp_by_age$over60 == "over60",
+                                                   
+                                                   grep("^freq", names(symp_by_age))][],
+                                      na.rm = TRUE
+                                    ),
+                                    proportion_of_under_60 = sum(
+                                      symp_by_age[!symp_by_age$symptom %in% c("any_symptom", "no symptoms", "stable") &
+                                                  symp_by_age$over60 == "under60",
+                                                   grep("^freq", names(symp_by_age))][],
+                                      na.rm = TRUE
+                                    )
+))
+
+# print
+table_out %>% arrange(-proportion_of_all) %>% mutate_if(is.numeric, round, digits = 2)
+
+
+#save
+saveRDS(table_out, "proportional_symptoms.rds")
+
+```
+
+
+```{r table outputs 2}
+table_onset_to_symp <- mean_onset_to_symp %>% 
+  rename(fitted_mean = mean_onset_to_symp,
+                               fitted_sd = sd_onset_to_symp)
+
+table_onset_to_symp %<>% bind_rows(data.frame(symptom = unique(symptoms_freq$symptom),
+                                             fitted_mean = NA,
+                                             fitted_sd = NA))
+
+table_onset_to_symp %<>% filter(!duplicated(symptom))
+
+table_onset_to_symp %<>% filter(!symptom %in% c("any_symptom", "no symptoms", "stable"))
+
+table_onset_to_symp %<>% mutate(observed_mean = NA,
+                                observed_sd = NA)
+
+for(i in 1:nrow(table_onset_to_symp)){
+  out <- get_mean_onset_to_symptom(df, table_onset_to_symp$symptom[i])
+  
+  table_onset_to_symp$observed_mean[i] <- out$mean_out
+  table_onset_to_symp$observed_sd[i] <- out$sd_out
+}
+
+# total
+table_onset_to_symp %<>% left_join(symp_by_age %>%
+                           group_by(symptom) %>%
+                           mutate(count_by_symptom = sum(total_symp)) %>%
+                           select(c(symptom, count_by_symptom))) %>%
+  unique() %>%
+  rename(number_of_symptom_reports = count_by_symptom)
+
+#print
+table_onset_to_symp %>% arrange(-observed_mean) %>% mutate_if(is.numeric, round, digits = 2)
+
+#save
+saveRDS(table_onset_to_symp, "time_onset_to_symptom.rds")
+```
+
+
+```{r table outputs 3}
+
+comb_table <- left_join(table_out, table_onset_to_symp)
+
+comb_table %<>% select(-starts_with("fitted"))
+
+comb_table %<>% rename(`Mean time from onset to symptom` = observed_mean,
+                       `S.D. time from onset to symptom` = observed_sd,
+                       Symptom = symptom,
+                       `Proportion of all reported symptoms` = proportion_of_all,
+                       `Proportion of reported symptoms in over 60s` = proportion_of_over_60,
+                       `Proportion of reported symptoms in under 60s` = proportion_of_under_60,
+                       `Total count of individual symptom` = number_of_symptom_reports)
+
+comb_table
+
+saveRDS(comb_table, "combined_case_study_table.rds")
+```
+
+```{r table outputs 4}
+## these are all observed mean and sd delays.
+## TO DO: repeat for fitted delays and check how diff they are.
+
+table_onset_to_outcome <- data.frame(Outcome = c("First consultation", "Hospitalised", "Recovered/Discharged", "Death", "Hospitalised duration"),
+                                     Mean = rep(NA, 5),
+                                     Sd = rep(NA, 5),
+                                     Number_reports = rep(NA, 5))
+
+# first consultation
+table_onset_to_outcome$Mean[table_onset_to_outcome$Outcome == "First consultation"] <- 
+  mean(df$date_first_consultation - df$date_onset, na.rm = TRUE)
+table_onset_to_outcome$Sd[table_onset_to_outcome$Outcome == "First consultation"] <- 
+  sd(df$date_first_consultation - df$date_onset, na.rm = TRUE)
+table_onset_to_outcome$Number_reports[table_onset_to_outcome$Outcome == "First consultation"] <- 
+  sum(!is.na(df$date_first_consultation))
+
+# hospitalised
+df %<>% mutate(time_first = date_hospitalised - date_onset)
+df %<>% mutate(time_first = ifelse(time_first<0, NA, time_first)) #remove negative ones for now
+
+table_onset_to_outcome$Mean[table_onset_to_outcome$Outcome == "Hospitalised"] <- 
+  mean(df$date_hospitalised - df$date_onset, na.rm = TRUE)
+table_onset_to_outcome$Sd[table_onset_to_outcome$Outcome == "Hospitalised"] <- 
+  sd(df$date_hospitalised - df$date_onset, na.rm = TRUE)
+table_onset_to_outcome$Number_reports[table_onset_to_outcome$Outcome == "Hospitalised"] <- 
+  sum(!is.na(df$date_hospitalised))
+
+# recovered
+table_onset_to_outcome$Mean[table_onset_to_outcome$Outcome == "Recovered/Discharged"] <- 
+  mean(df$date_recovered - df$date_onset, na.rm = TRUE)
+table_onset_to_outcome$Sd[table_onset_to_outcome$Outcome == "Recovered/Discharged"] <- 
+  sd(df$date_recovered - df$date_onset, na.rm = TRUE)
+table_onset_to_outcome$Number_reports[table_onset_to_outcome$Outcome == "Recovered/Discharged"] <- 
+  sum(!is.na(df$date_recovered))
+
+# death
+table_onset_to_outcome$Mean[table_onset_to_outcome$Outcome == "Death"] <- 
+  mean(df$date_death - df$date_onset, na.rm = TRUE)
+table_onset_to_outcome$Sd[table_onset_to_outcome$Outcome == "Death"] <- 
+  sd(df$date_death - df$date_onset, na.rm = TRUE)
+table_onset_to_outcome$Number_reports[table_onset_to_outcome$Outcome == "Death"] <- 
+  sum(!is.na(df$date_death))
+
+# hospital stay
+tmp=df$date_recovered - df$date_hospitalised
+tmp2 = df$date_death - df$date_hospitalised
+tmp[is.na(tmp)] = tmp2[is.na(tmp)]
+
+table_onset_to_outcome$Mean[table_onset_to_outcome$Outcome == "Hospitalised duration"] <- 
+  mean(tmp, na.rm = TRUE)
+table_onset_to_outcome$Sd[table_onset_to_outcome$Outcome == "Hospitalised duration"] <- 
+  sd(tmp, na.rm = TRUE)
+table_onset_to_outcome$Number_reports[table_onset_to_outcome$Outcome == "Hospitalised duration"] <- 
+  sum(!is.na(tmp))
+
+table_onset_to_outcome %>% mutate_if(is.numeric, round, digits = 2)
+
+#save
+saveRDS(table_onset_to_outcome, "time_onset_to_outcome.rds")
+
+```

@@ -1,0 +1,203 @@
+---
+title: "Report N: Symptom progression of 2019-novel coronavirus (nCoV)"
+author: "Katy Gaythorpe,  Natsuko Imai, Gina Cuomo-Dannenburg, Marc Baguelin, Sangeeta Bhatia, Adhiratha Boonyasiri, Anne Cori, Zulma Cucunubá,  Ilaria Dorigatti, Rich FitzJohn, Han Fu,  Will Green, Arran Hamlet, Wes Hinsley, Daniel Laydon, Gemma Nedjati-Gilani, Lucy Okell, Steven Riley, Sabine Van Elsland, Erik Volz, Haowei Wang, Raymond Wang, Caroline Walters , Xiaoyue Xi, Christl Donnelly, Azra Ghani, Neil Ferguson. With support from other volunteers from the MRC Centre. "
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output:
+  word_document:
+    fig_width: 7
+    fig_height: 5
+    fig_caption: true
+    highlight: "tango"
+    reference_docx: word_style.docx
+bibliography: master.bib
+---
+
+
+```{r set up , echo = FALSE, message = FALSE, warning = FALSE}
+
+ knitr::opts_chunk$set(echo = FALSE, 
+                       message = FALSE,
+                       warning = FALSE)
+
+## library(orderly)
+## orderly::orderly_test_start("B3_plot_severity_case_studies")
+## orderly::orderly_run("B3_plot_severity_case_studies")
+
+
+## orderly::orderly_develop_start()
+## orderly::orderly_develop_status()
+## orderly::orderly_develop_clean()
+
+
+```
+
+```{r read_data}
+df_ps <-  readRDS("proportional_symptoms.rds")
+
+df_ts <-  readRDS("time_onset_to_symptom.rds")
+
+df_to <-  readRDS("time_onset_to_outcome.rds")
+
+df_case_studies <- readRDS("severity_data_country_case_studies.rds")
+
+df_case_studies$date_report[df_case_studies$date_report>Sys.Date()] <- lubridate::ydm(as.character(
+    df_case_studies$date_report[df_case_studies$date_report>Sys.Date()])) %>% na.omit()
+
+df_comb <- readRDS("combined_case_study_table.rds")
+
+df_china <- readr::read_csv("severity_data_China_papers.csv")
+```
+
+# Summary
+
+The COVID-19 epidemic was declared a Public Health Emergency of International Concern (PHEIC) by WHO  on 30th January 2020 [@WHO_2].
+As of `r format(Sys.time(), '%d %B, %Y')` there are now over `84,144` cases. Here, we use published and preprint studies of clinical characteristics of cases in China as well as case studies of individuals from Hong Kong, Japan, Singapore and South Korea to examine the proportional occurrence of symptoms and the progression of symptoms through time.
+
+We find that in China, where specific symptoms are reported, pneumonia is the most commonly reported, see figure 1. Outside of China, in Hong Kong, Japan, Singapore and South Korea, the most commonly reported symptom is fever. In this group, pneumonia is the 3rd most common reported symptom although it represents a higher proportion in individuals over 60 years old.
+
+When we examine symptom progression in cases from Hong Kong, Japan, Singapore and South Korea.
+We find the average time from reported onset of symptoms to the occurrence of specific symptoms varies substantially. The average time to develop pneumonia is `r df_ts %>% filter(symptom == "pneumonia") %>% select(observed_mean) %>% round(digits = 2) %>% as.numeric()` days whereas for fever, it is often reported at onset with mean time to develop fever `r df_ts %>% filter(symptom == "fever") %>% select(observed_mean) %>% round(digits = 2) %>% as.numeric()` days. As such, we find a more varied spectrum of severity in cases outside China.
+
+
+# Methods
+
+We collated published papers and preprints on clinical progression of cases of COVID-19 within China. Included studies are shown in table 1 detailing the paper and cohort size included. 
+
+
+```{r table_of_papers}
+dfout <- data.frame(`Lead author` = c("Cai", "Chan", "Chen", "Chen", "Guan", "Huang", "Wang",
+                                      "Wei", "Li", "Phan", "Wang", "Yang", "Yang"),
+                    `Peer reviewed` = c("No", "Yes", "Yes", "No", "Yes", "Yes", "Yes", "Yes", 
+                                        "Yes", "Yes", "No", "No", "Yes"),
+                    `Cohort size` = c(298, 6, 99, 21, 1099, 41, 138, 9, 47+ 248+ 130,
+                                      2, 2745, 4021, 51))
+
+
+
+dfout %>% 
+  rename(`First author` = Lead.author, 
+         `Peer reviewed`  = Peer.reviewed, 
+         `Cohort size` = Cohort.size) %>%
+  flextable(cwidth = 1.5)
+```
+*Table 1: Clinical studies included in current analysis of symptom progression in China for COVID-19 [@cai; @chan2020familial; @chen2020epidemiological; @chen_wu; @guan2020clinical; @huang2020clinical;  @li2020early; @phan2020importation; @wang2020clinical; @wang; @weinovel; @yang2020epidemiological; @yang].*
+
+We also examined case studies on infections in Hong Kong, Japan, Singapore and South Korea, up to the report date `r format(lubridate::ymd(max(df_case_studies$date_report, na.rm = T)), '%d %B, %Y')`. These case studies provide not only symptoms but also the date that symptoms were first recorded. As such, we can examine the average time from recorded onset to time of first symptom occurrence. A summary of included case studies is shown in table 2 and the data is publicly available from the relevant ministries of health for specific case studies, see attached data file for links.
+
+```{r case_study_details}
+
+dfout <- data.frame(Country = names(table(df_case_studies$country)),
+                    no_entries = as.numeric(table(df_case_studies$country)),
+                    last_report = df_case_studies %>% group_by(country) %>% 
+                      summarise(date_report = max(date_report, na.rm=T)) %>%
+                      select(date_report))
+
+dfout %>% 
+  rename(`Number of cases included` = no_entries,
+         `Last included report` = date_report) %>%
+  flextable(cwidth = 1.2)
+```
+*Table 2: Summary information for case studies included in analyses.*
+
+For both the clinical studies in China and the case studies for Hong Kong, Japan, Singapore and South Korea, we group the symptoms into common conditions, detailed in the following figures. Where proportional symptom presentation is calculated (figure 1), only studies where specific symptoms are recorded are included, and as such, and because individuals may exhibit more than one symptom, the sum total is not necessarily equal to one.
+
+# Results
+
+The symptoms reported in clinical studies from China are displayed in figure 1. This highlights that pneumonia is the most commonly noted symptom/ condition, followed by fever and cough/ sore throat.
+
+```{r symptoms_all_china, fig.cap="Figure 1: Proportion of patients reporting each symptom in China from clinical studies."}
+knitr::include_graphics("proportional_symptoms_all-1.png")
+```
+
+In figure 2 we examine the progression and occurrence of the five most common symptoms for all individuals in our international case study dataset. In this figure, each row represents one case with the age of the case shown on the left-hand side; the cases are arranged by age from youngest (top) to oldest (bottom). There is a broad range of time to hospitalisation and symptoms for each individual.
+
+```{r symptoms_all_case_studies, fig.cap="Figure 2: Progression of selected symptoms in Hong Kong, Japan, Singapore and South Korea. Each row is an individual case. Dots denote the first reported occurrence of each symptom; lines denote durations from onset to recovery (cyan) or death (orange); crosses denote hospitalisation and squares represent recovery (cyan) or death (orange)."}
+knitr::include_graphics("progressionmap_all-1.png")
+```
+
+We further explore the time from onset of first symptoms to the initial occurrence of specific symptoms in table 3. Firstly, we see that the mostly commonly reported symptom for the included international cases is fever irrespective of age. The second most common symptom is sore throat and/or cough. Pneumonia is the third most common overall although the proportion is slightly higher in over 60s. We find that symptoms commonly progress from fever and cough, at onset, to myalgia or fatigue approximately 1 day later to pneumonia or respiratory symptoms approximately five days later. The total number of people reporting a symptom is `r nrow(df_case_studies %>% filter(!is.na(symptoms_at_onset) & symptoms_at_onset =="any_symptom"))`.
+
+```{r table_case_studies}
+
+df_comb %>% 
+  mutate(Symptom = Hmisc::capitalize(Symptom)) %>%
+  mutate_if(is.numeric, round, digits = 2) %>%
+  flextable(cwidth = 1.1) %>%
+  bg(i = nrow(df_comb),  bg = "grey80") %>%
+  bold(i= which.max(df_comb$`Proportion of all reported symptoms`[df_comb$Symptom != "Total reported"]),
+       j = "Proportion of all reported symptoms" ) %>%
+  bold(i= which.max(df_comb$`Proportion of reported symptoms in over 60s`[df_comb$Symptom != "Total reported"]),
+       j = "Proportion of reported symptoms in over 60s" )%>%
+  bold(i= which.max(df_comb$`Proportion of reported symptoms in under 60s`[df_comb$Symptom != "Total reported"]),
+       j = "Proportion of reported symptoms in under 60s" )
+
+```
+*Table 3: Proportional reported symptoms by age from country cases studies from Hong Kong, Japan, Singapore and South Korea with observed mean time (in days) from onset to symptom occurrence. NA indicates that no symptoms were reported for that cohort.*
+
+The time from onset to outcome or seeking healthcare is also examined. In table 4 we see that the average time to seek healthcare is `r round(df_to$Mean[df_to$Outcome == "First consultation"], 2)` days, to hospitalisation is `r round(df_to$Mean[df_to$Outcome == "Hospitalised"], 2)` days whereas the average time from onset to recovery or discharge is `r round(df_to$Mean[df_to$Outcome == "Recovered/Discharged"], 2)` days.
+
+```{r table_time_to_outcome}
+df_to %>%
+  mutate_if(is.numeric, round, digits = 2) %>%
+  rename(`Number of reports` = Number_reports,
+         `S.D. (days)` = Sd,
+         `Mean (days)` = Mean) %>%
+  flextable(cwidth = 1.7)
+
+```
+*Table 4: Observed time from onset to seeking healthcare or outcome from country cases studies from Hong Kong, Japan, Singapore and South Korea.*
+
+Using the severity definitions of the WHO-China Joint Mission on COVID-19, we classify each individual as either mild or severe dependant on their reported symptoms [@WHO_3]. Similarly to the report, we find that `r round((nrow(df_case_studies %>% filter(severity == "severe"))/nrow(df_case_studies))*100)`% of cases are severe.
+
+Finally, in order to understand the relative severity between cases in China and externally, we compare the age distribution in each cohort, see table 5. We find that the proportion of people who are at least 60 is far higher in the China studies compared to the individual cases studies from Hong Kong, Japan, Singapore and South Korea.
+
+```{r table_proportion_age}
+dfout <- data.frame(`Age group` = c("Over 60s", "Under 65s"),
+                    `China clinical studies` = c(NA, NA),
+                    `International case studies` = c(NA, NA) )
+
+tmp <- df_china %>% 
+  mutate(over_65_numerator = ifelse(0, NA, over_65_numerator)) %>%
+  mutate(over_65_numerator = ifelse(is.na(over_65_numerator),
+                                    over_60_numerator,
+                                    over_65_numerator)) %>%
+  filter(!is.na(over_65_numerator))
+
+
+
+dfout$China.clinical.studies <- c(sum(tmp$over_65_numerator, na.rm = T)/ 
+                                    sum(tmp$denominator, na.rm = T) *100,
+                                  100-sum(tmp$over_65_numerator, na.rm = T)/
+                                    sum(tmp$denominator, na.rm = T) *100)
+
+tmp <- df_case_studies %>% filter(!is.na(age))
+
+dfout$International.case.studies <- c(sum(tmp$age>64, na.rm = T)/nrow(tmp)*100,
+                                      100 - sum(tmp$age>64, na.rm = T)/nrow(tmp)*100)
+
+dfout %>% 
+  rename(`Age group` = Age.group,
+         `China clinical studies %` = China.clinical.studies,
+         `International case studies %` = International.case.studies) %>%
+  mutate(`China clinical studies %` = round(`China clinical studies %`),
+         `International case studies %` = round(`International case studies %`)) %>%
+  filter(`Age group` != "Under 65s") %>%
+  flextable(cwidth = 1.2)
+
+```
+*Table 5: The proportion of cases (%) that are at least 60 where information on age is available. In some of the clinical studies, the number of individuals over 65 was included rather than 60, therefore this is an underestimate.*
+
+# Conclusions
+
+We have examined symptom frequency and progression for a selection of cases from clinical studies in China and individual case reports in Hong Kong, Japan, Singapore and South Korea.
+There are marked differences in age and severity of cases in China compared to more internationally. We find that, whilst pneumonia is the most common condition or symptom in cases in China, it is the third most common following fever and cough/ or sore throat in Hong Kong, Japan, Singapore and South Korea. This may be due to the the link between severity and age as the proportion of individuals in older age groups are far higher in cases in China. Alternatively it may be as a result of reporting ie. that pneuonia is part of the case definition and therefore assumed.
+
+There are a number of caveats to this work. Firstly, our international case studies do not include all cases outside China but a subset in both time and space. As detailed symptom progression data for other countries and more recent cases becomes available, this will be reviewed and the analysis updated where possible. Secondly, we utilise clinical studies available for cases within China, some of which have not yet been peer-reviewed. Pre-prints optimise the sharing of valuable data and information in outbreak settings; however, the analyses within this report may need to be reviewed as the pre-prints are revised.
+
+We analysed the symptom prevalence and progression in cases of COVID-19 within China and internationally in Hong Kong, Japan, Singapore and South Korea. Generally the age structure and symptom prevalence changed between the two geographic regions, potentially motivated by population age structures and the likely characteristics of travelers ie. younger with fewer comorbidities. The analyses shown was made possible by detailed clinical publications and pre-prints as well as the sharing of case characteristics. 
+
+
+# Acknowledgements
+
+\newpage
+# References

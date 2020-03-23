@@ -1,0 +1,256 @@
+---
+title: "Plot severity data from China"
+author: "Katy Gaythorpe and Natsuko Imai"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output:
+  word_document:
+    fig_width: 7
+    fig_height: 5
+    fig_caption: true
+    highlight: "tango"
+    reference_docx: word_style.docx
+    df_print: "kable"
+---
+
+```{r set up }
+
+ knitr::opts_chunk$set(echo = FALSE, fig.path = "figures/", fig.ext = "png", 
+                       fig.height = 8)
+
+## library(orderly)
+## orderly::orderly_test_start("B2_plot_severity_china")
+## orderly::orderly_run("B2_plot_severity_china")
+
+```
+
+Import data.
+```{r }
+
+df_symptom <- read.csv("severity_data_China_papers.csv",
+                       stringsAsFactors = FALSE)
+
+```
+
+# General severity and comorbidity plots
+
+```{r proportional_symptoms_all,  fig.cap="Proportion of all symptoms of each type."}
+df_symptom %>%
+  filter(grouped_symptoms != "any_symptom") %>%
+  group_by(grouped_symptoms) %>%
+  summarise(numerator = sum(symptom_numerator, na.rm = TRUE), 
+            denominator = sum(denominator, na.rm = TRUE) ) %>%
+  mutate(proportion_symptom= numerator/sum(denominator, na.rm = T),
+         proportion_symptom_low = Hmisc::binconf(numerator,sum(denominator,
+                                                               na.rm=T) )[,2],
+         proportion_symptom_high = Hmisc::binconf(numerator,sum(denominator,
+                                                                na.rm = T) )[,3])%>%
+
+ggplot() + 
+  geom_col(aes(x = reorder(grouped_symptoms, -proportion_symptom), 
+                                  y = proportion_symptom,
+                                  fill = proportion_symptom)) +
+  geom_errorbar(aes(x = reorder(grouped_symptoms, -proportion_symptom), 
+                    ymin = proportion_symptom_low,
+                    ymax = proportion_symptom_high))+
+  theme_pubr() +
+  scale_fill_viridis_c()+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 12),
+        legend.position = "none") +
+  labs(x = "Symptoms", y = "Proportion of all people reporting each symptom")
+
+```
+
+```{r proportional_symptoms_by_severity, fig.cap="Proportion of all symptoms of each type structured by severity."}
+# plotting symptom occurrence by severity
+tmp <- df_symptom %>%
+  filter(grouped_symptoms != "any_symptom") %>%
+  group_by(grouped_symptoms, severity_severe_non_severe) %>%
+  summarise(numerator = sum(symptom_numerator, na.rm = TRUE), 
+            denominator = sum(denominator, na.rm = TRUE)) %>%
+  mutate(proportion_symptom= numerator/sum(denominator),
+         proportion_symptom_low = Hmisc::binconf(numerator,sum(denominator))[,2],
+         proportion_symptom_high = Hmisc::binconf(numerator,sum(denominator))[,3]) %>%
+  ungroup() 
+
+t <- tmp %>%  
+  filter(severity_severe_non_severe == "non-severe") %>%
+  group_by(grouped_symptoms) %>%
+  summarise(proportion_symptom = sum(proportion_symptom, na.rm = T))%>%
+  arrange(-proportion_symptom)
+
+
+tmp %<>%
+  mutate(grouped_symptoms=factor(tmp$grouped_symptoms, 
+                                 levels = c(t$grouped_symptoms,
+                                            unique(tmp$grouped_symptoms)[
+                                              which(!unique(tmp$grouped_symptoms) %in%
+                                                      t$grouped_symptoms)
+                                            ])))
+                                
+
+tmp %>% 
+  ggplot() + 
+  geom_col(aes(x = grouped_symptoms,
+               y = proportion_symptom,
+               fill = grouped_symptoms)) +
+  geom_errorbar(aes(x = grouped_symptoms,
+                    ymin = proportion_symptom_low,
+                    ymax = proportion_symptom_high))+
+  theme_pubr() +
+  scale_fill_viridis_d()+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 12),
+        legend.position = "none") +
+  labs(x = "Symptoms", y = "Proportion of all reported symptoms") +
+  facet_wrap(~severity_severe_non_severe, ncol = 1, 
+             labeller = labeller(severity_severe_non_severe = setNames(
+               c("Unspecified", "Non-severe", "Severe"),
+               unique(tmp$severity_severe_non_severe))
+             ),
+             scales = "free_y")
+
+
+```
+
+
+
+
+
+```{r proportional_comorbidity_all, fig.cap="Proportion of all comorbidities of each type."}
+# comorbidity
+df_symptom %>%
+  filter(!is.na(grouped_comorbidity)) %>%
+  group_by(grouped_comorbidity) %>%
+  summarise(numerator = sum(comorbidity_numerator, na.rm = TRUE), 
+            denominator = sum(cohort_size, na.rm = TRUE)) %>%
+  mutate(proportion_comorbidity= numerator/denominator,
+         proportion_comorbidity_low = Hmisc::binconf(numerator,denominator)[,2],
+         proportion_comorbidity_high = Hmisc::binconf(numerator,denominator)[,3])%>%
+  
+  ggplot() + 
+  geom_col(aes(x = reorder(grouped_comorbidity, -proportion_comorbidity), 
+               y = proportion_comorbidity,
+               fill = proportion_comorbidity)) +
+      geom_errorbar(aes(x = reorder(grouped_comorbidity, -proportion_comorbidity),
+                    ymin = proportion_comorbidity_low,
+                    ymax = proportion_comorbidity_high))+
+  theme_pubr() +
+  scale_fill_viridis_c()+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 12),
+        legend.position = "none") +
+  labs(x = "Comorbidity", y = "Proportion of all reported comorbidity")
+```
+
+```{r proportional_comorbidity_by_severity, fig.cap="Proportion of all comorbidities structured by severity."}
+# comorbidity
+
+tmp <- df_symptom %>%
+  filter(!is.na(grouped_comorbidity)) %>%
+  group_by(grouped_comorbidity, severity_severe_non_severe) %>%
+  summarise(numerator = sum(comorbidity_numerator, na.rm = TRUE), 
+            denominator = sum(cohort_size, na.rm = TRUE)) %>%
+  mutate(proportion_comorbidity= numerator/sum(denominator),
+         proportion_comorbidity_low = Hmisc::binconf(numerator,sum(denominator))[,2],
+         proportion_comorbidity_high = Hmisc::binconf(numerator,sum(denominator))[,3]) %>%
+  ungroup() 
+
+
+t <- tmp %>%  
+  filter(severity_severe_non_severe == "non-severe") %>%
+  group_by(grouped_comorbidity) %>%
+  summarise(proportion_comorbidity = sum(proportion_comorbidity))%>%
+  arrange(-proportion_comorbidity)
+
+
+tmp %<>%
+  mutate(grouped_comorbidity=factor(tmp$grouped_comorbidity, 
+                                 levels = c(t$grouped_comorbidity,
+                                            unique(tmp$grouped_comorbidity)[
+                                              which(!unique(tmp$grouped_comorbidity) %in%
+                                                      t$grouped_comorbidity)
+                                            ])))
+                                
+
+tmp %>% 
+  ggplot() + 
+  geom_col(aes(x = grouped_comorbidity,
+               y = proportion_comorbidity,
+               fill = grouped_comorbidity)) +
+  geom_errorbar(aes(x = grouped_comorbidity,
+                    ymin = proportion_comorbidity_low,
+                    ymax = proportion_comorbidity_high))+
+  theme_pubr() +
+  scale_fill_viridis_d()+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 12),
+        legend.position = "none") +
+  labs(x = "Comorbidity", y = "Proportion of all reported comorbidities") +
+  facet_wrap(~severity_severe_non_severe, ncol = 1, 
+             labeller = labeller(severity_severe_non_severe = setNames(
+               c("Unspecified", "Non-severe", "Severe"),
+               unique(tmp$severity_severe_non_severe))
+             ),
+             scales = "free_y")
+
+```
+
+These figures depend on the number of non-empty records. We find that there are `r df_symptom %>% filter(!is.na(grouped_symptoms)) %>% select(symptom_numerator) %>% sum(na.rm = TRUE)` people reporting symptoms out of `r df_symptom %>% filter(!is.na(grouped_symptoms)) %>% select(denominator) %>% sum(na.rm = TRUE)` and there are `r df_symptom %>% filter(!is.na(grouped_comorbidity)) %>% select(comorbidity_numerator) %>% sum(na.rm = TRUE)` people reporting comorbidities out of `r df_symptom %>% filter(!is.na(grouped_comorbidity)) %>% select(denominator) %>% sum(na.rm = TRUE)`. 
+
+In the googlesheet, `r df_symptom %>% filter(severity_severe_non_severe == "severe" ) %>% select(denominator) %>% sum(na.rm = TRUE)` people report severe disease, `r df_symptom %>% filter(severity_severe_non_severe == "non-severe" ) %>% select(denominator) %>% sum(na.rm = TRUE)` people report non-severe disease and `r df_symptom %>% filter(severity_severe_non_severe == "any_severity" ) %>% select(denominator) %>% sum(na.rm = TRUE)` do not specify.
+
+# Other characteristics
+
+## Age
+
+```{r median_age_distribution, fig.cap="Age distribution of clinical studies"}
+df_symptom %<>%
+  mutate(median_age = as.numeric(median_age))
+
+
+```
+
+The average age was `r weighted.mean(df_symptom$median_age,w = df_symptom$cohort_size, na.rm = T)`.
+
+
+```{r over_60}
+df_symptom %<>%
+  mutate(over_65_numerator = ifelse(is.na(over_65_numerator),
+                                    over_60_numerator, 
+                                    over_65_numerator))
+df_over60 <- df_symptom %>% filter(!is.na(over_65_numerator))
+
+```
+
+The number of people who are at least 60, where reported, is `r df_over60 %>% select(over_65_numerator) %>% sum(na.rm = TRUE)` out of `r df_over60 %>% select(denominator) %>% sum(na.rm = TRUE)`. This is an underestimate as some studies only report people over 65.
+
+## Gender
+
+The number of people who are male, where reported, is `r df_symptom %>% filter(!is.na(male_numerator)) %>% select(male_numerator) %>% sum(na.rm = TRUE)` out of `r df_symptom %>% filter(!is.na(male_numerator)) %>% select(denominator) %>% sum(na.rm = TRUE)`.
+
+# Pneumonia
+
+Now we look specifically at the occurrence of pneumonia and who gets it.
+
+```{r pneumonia}
+
+df_pneumonia <- df_symptom %>% filter(grouped_symptoms %in% "pneumonia")
+
+```
+
+Out of people reporting pneumonia,`r df_pneumonia %>% filter(!is.na(male_numerator)) %>% select(male_numerator) %>% sum(na.rm = TRUE)` are male out of `r df_pneumonia %>% filter(!is.na(male_numerator)) %>% select(denominator) %>% sum(na.rm = TRUE)` reports and `r df_pneumonia %>% filter(!is.na(over_65_numerator)) %>% select(over_65_numerator) %>% sum(na.rm = TRUE)` are over the age of 60 from the pool of `r df_pneumonia %>% filter(!is.na(over_65_numerator)) %>% select(denominator) %>% sum(na.rm = TRUE)` completed reports.
+
+The average age was `r weighted.mean(df_pneumonia$median_age,w = df_pneumonia$cohort_size, na.rm = T)`.
+
+# Hubei
+
+Now we look specifically at those cases reported to be in Hubei. In most cases this is specifically Wuhan.
+
+```{r hubei}
+
+df_hubei <- df_symptom %>% filter(!is.na(hubei_numerator))
+
+```
+
+Out of people reporting being from Hubei, `r df_hubei %>% filter(!is.na(male_numerator)) %>% select(male_numerator) %>% sum(na.rm = TRUE)` are male out of `r df_hubei %>% filter(!is.na(male_numerator)) %>% select(denominator) %>% sum(na.rm = TRUE)` reports and `r df_hubei %>% filter(!is.na(over_65_numerator)) %>% select(male_numerator) %>% sum(na.rm = TRUE)` are over the age of 60 from a pool of `r df_hubei %>% filter(!is.na(over_65_numerator)) %>% select(denominator) %>% sum(na.rm = TRUE)` reports.
+
+The average age was `r weighted.mean(df_hubei$median_age,w = df_hubei$cohort_size, na.rm = T)`.
+
+
