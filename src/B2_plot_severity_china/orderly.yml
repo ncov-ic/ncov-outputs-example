@@ -29,10 +29,6 @@ artefacts:
       description: Plotting severity data for China
       filenames:
         - B2_plot_severity_china.docx
-#  - data:
-#      description: Plots of severity aspects
-#      filenames:
-        
   - staticgraph:
       description: plots for report
       filenames:

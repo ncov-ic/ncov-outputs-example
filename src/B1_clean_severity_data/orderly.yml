@@ -3,11 +3,6 @@
 # run
 script: script.R
 
-# parameters:
-#   - parallel
-#   - scenario_name
-#   - short_run
-
 # You must list at least one artefact that your report will generate.
 # Each artefact consists of one or more files.  The format is to list
 # the "type" of an artefact (staticgraph, interactivegraph, data,
@@ -39,10 +34,6 @@ artefacts:
         - severity_data_case_study_symptoms_over_60.csv
         - severity_data_case_study_symptoms_under_60.csv
         - severity_data_case_study_symptoms_all.csv
-#  - staticgraph:
-#      description: plots for report
-#      filenames:
-#        - figures/cum_plots_for_report-1.png
 
 # An optional name to describe the report in more detail than its
 # directory name (which must be short) but less detail than
